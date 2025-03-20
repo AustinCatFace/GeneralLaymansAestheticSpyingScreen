@@ -1,16 +1,8 @@
 [
 {
-  "modid" : "generallaymansaestheticspyingscreen",
-  "name" : "GeneralLaymansAestheticSpyingScreen",
+  "modid" : "cfglass",
+  "name" : "CF Glass",
   "version" : "${version}",
-  "url" : "http://ichun.me/mods/general-laymans-aesthetic-spying-screen/",
-  "credits" : "",
-  "authorList": [
-    "iChun"
-  ],
-  "description": "Also known as GLASS",
-  "updateUrl" : "",
-  "parent" : "",
   "screenshots": [
   ],
   "dependencies": [

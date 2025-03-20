@@ -1,0 +1,7 @@
+{
+    "variants": {
+        "normal": { "model": "glass" },
+        "master=false":    { "model": "glass" },
+        "master=true":    { "model": "glass" }
+    }
+}
