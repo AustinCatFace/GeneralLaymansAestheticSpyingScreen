@@ -15,9 +15,20 @@ import org.lwjgl.opengl.GL11;
 public class PortalEntityPlacement extends WorldPortal {
 
     public PortalEntity entity;
+    public PortalEntityPlacement(World world){
+        super(world);
+    }
     public PortalEntityPlacement(PortalEntity entity) {
-        super(entity.world, entity.tpLoc, entity.getHorizontalFacing(), EnumFacing.UP, (float) entity.dimensions.x, (float) entity.dimensions.y);
+        super(entity.world, entity.getPositionVector(), entity.getHorizontalFacing(), EnumFacing.UP, (float) entity.dimensions.x, (float) entity.dimensions.y);
         this.entity = entity;
+
+        PortalEntityPlacement pair = new PortalEntityPlacement(world);
+        pair.setPosition(entity.tpLoc);
+        pair.setFace(entity.getHorizontalFacing(), EnumFacing.UP);
+        setPair(pair);
+        pair.setPair(this);
+
+        setCullRender(false);
     }
 
     @Override
@@ -39,22 +50,18 @@ public class PortalEntityPlacement extends WorldPortal {
     public void drawPlane(float v) {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
-
+        GlStateManager.pushMatrix();
+        //GlStateManager.rotate(90,0,1,0);
         GlStateManager.color(1.0f,1.0f,1.0f,1.0f);
 
-//        GlStateManager.glBegin(GL11.GL_QUADS);
-//        GlStateManager.glVertex3f((float) (-entity.dimensions.x/2),0,0);
-//        GlStateManager.glVertex3f((float) (entity.dimensions.x/2), 0,0);
-//        GlStateManager.glVertex3f((float) (entity.dimensions.x/2), (float) entity.dimensions.y,0);
-//        GlStateManager.glVertex3f((float) (-entity.dimensions.x/2), (float) entity.dimensions.y,0);
-//        GlStateManager.glEnd();
-
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_COLOR);
-        bufferbuilder.pos(-entity.dimensions.x,  entity.dimensions.y, 0F).endVertex();
-        bufferbuilder.pos(-entity.dimensions.x, 0, 0F).endVertex();
-        bufferbuilder.pos( entity.dimensions.x, 0, 0F).endVertex();
-        bufferbuilder.pos( entity.dimensions.x,  entity.dimensions.y, 0F).endVertex();
+        bufferbuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
+        bufferbuilder.pos(-entity.dimensions.x/2,  entity.dimensions.y, 0F).color(1.0f,1.0f,1.0f,1.0f).endVertex();
+        bufferbuilder.pos(-entity.dimensions.x/2, 0, 0F).color(1.0f,1.0f,1.0f,1.0f).endVertex();
+        bufferbuilder.pos( entity.dimensions.x/2, 0, 0F).color(1.0f,1.0f,1.0f,1.0f).endVertex();
+        bufferbuilder.pos( entity.dimensions.x/2,  entity.dimensions.y, 0F).color(1.0f,1.0f,1.0f,1.0f).endVertex();
         tessellator.draw();
+        GlStateManager.popMatrix();
+
     }
 
     @Override

@@ -299,7 +299,6 @@ public class TileEntityMirrorRenderer extends TileEntitySpecialRenderer<TileEnti
                 GlStateManager.rotate(face == EnumFacing.UP ? -90F : 90F, 1F, 0F, 0F);
             }
             GlStateManager.translate(0F, 0F, pushback);
-//            GlStateManager.scale(-1,1,1);
             float halfSize = 0.501F;
             bufferbuilder.begin(7, DefaultVertexFormats.POSITION_COLOR);
             bufferbuilder.pos(-halfSize,  halfSize, 0F).color(r, g, b, alpha).endVertex();
@@ -308,11 +307,6 @@ public class TileEntityMirrorRenderer extends TileEntitySpecialRenderer<TileEnti
             bufferbuilder.pos( halfSize,  halfSize, 0F).color(r, g, b, alpha).endVertex();
 
 
-
-//            bufferbuilder.pos( halfSize,  halfSize, 0F).color(r, g, b, alpha).endVertex();
-//            bufferbuilder.pos( halfSize, -halfSize, 0F).color(r, g, b, alpha).endVertex();
-//            bufferbuilder.pos(-halfSize, -halfSize, 0F).color(r, g, b, alpha).endVertex();
-//            bufferbuilder.pos(-halfSize,  halfSize, 0F).color(r, g, b, alpha).endVertex();
             tessellator.draw();
 
             GlStateManager.popMatrix();

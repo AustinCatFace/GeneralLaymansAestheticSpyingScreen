@@ -32,16 +32,7 @@ public class TileEntityMirrorMaster extends TileEntityMirrorBase{
             CFGlass.eventHandlerClient.addActiveMirror(this, channel);
             CFGlass.eventHandlerClient.mirrorLocations.put(channel, getPos());
 
-//            for(BlockPos pos : wirelessPos)
-//            {
-//                TileEntity te = getWorld().getTileEntity(pos);
-//                if(te instanceof TileEntityGlassWireless)
-//                {
-//                    TileEntityGlassWireless wireless = (TileEntityGlassWireless)te;
-//                    wireless.users++;
-//                    GeneralLaymansAestheticSpyingScreen.eventHandlerClient.addActiveGlass(wireless, channel);
-//                }
-//            }
+
         }
     }
 
@@ -53,16 +44,7 @@ public class TileEntityMirrorMaster extends TileEntityMirrorBase{
             CFGlass.eventHandlerClient.removeActiveMirror(this, channel);
             CFGlass.eventHandlerClient.mirrorLocations.remove(channel);
 
-//            for(BlockPos pos : wirelessPos)
-//            {
-//                TileEntity te = getWorld().getTileEntity(pos);
-//                if(te instanceof TileEntityGlassWireless)
-//                {
-//                    TileEntityGlassWireless wireless = (TileEntityGlassWireless)te;
-//                    wireless.users--;
-//                    GeneralLaymansAestheticSpyingScreen.eventHandlerClient.removeActiveGlass(wireless, channel);
-//                }
-//            }
+
         }
     }
 
@@ -75,16 +57,7 @@ public class TileEntityMirrorMaster extends TileEntityMirrorBase{
             CFGlass.eventHandlerClient.removeActiveMirror(this, channel);
             CFGlass.eventHandlerClient.mirrorLocations.remove(channel);
 
-//            for(BlockPos pos1 : wirelessPos)
-//            {
-//                TileEntity te = getWorld().getTileEntity(pos1);
-//                if(te instanceof TileEntityGlassWireless)
-//                {
-//                    TileEntityGlassWireless wireless = (TileEntityGlassWireless)te;
-//                    wireless.users--;
-//                    GeneralLaymansAestheticSpyingScreen.eventHandlerClient.removeActiveGlass(wireless, channel);
-//                }
-//            }
+
         }
         return flag;
     }

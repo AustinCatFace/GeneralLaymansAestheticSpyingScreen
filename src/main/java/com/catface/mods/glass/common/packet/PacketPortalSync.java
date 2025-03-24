@@ -1,14 +1,18 @@
 package com.catface.mods.glass.common.packet;
 
+import com.catface.mods.glass.common.CFGlass;
 import com.catface.mods.glass.common.entity.PortalEntity;
 import com.google.common.base.Predicate;
 import io.netty.buffer.ByteBuf;
 import me.ichun.mods.ichunutil.common.core.network.AbstractPacket;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -77,22 +81,32 @@ public class PacketPortalSync extends AbstractPacket {
 
     @Override
     public void execute(Side side, EntityPlayer entityPlayer) {
-        List<PortalEntity> portalList = entityPlayer.getEntityWorld().getEntities(PortalEntity.class, new Predicate<PortalEntity>() {
-            @Override
-            public boolean apply(@Nullable PortalEntity input) {
-                return input.getCustomNameTag().equals(name);
+        if(side.isClient()){
+            syncPortal(entityPlayer.world);
+        }
+    }
+
+    @SideOnly(Side.CLIENT)
+    public void syncPortal(World world){
+        Minecraft.getMinecraft().addScheduledTask(()->{
+            List<PortalEntity> portalList = world.getEntities(PortalEntity.class, new Predicate<PortalEntity>() {
+                @Override
+                public boolean apply(@Nullable PortalEntity input) {
+                    return input.getCustomNameTag().equals(name);
+                }
+            });
+
+            if(portalList.size() > 0){
+                PortalEntity ent = portalList.get(0);
+                ent.setPosition(loc.x,loc.y,loc.z);
+                ent.tpLoc = this.tpLoc;
+                ent.dimensions = this.size;
+                ent.portalRotation = this.portalRot;
+                ent.tpRotation = this.tpRot;
+                ent.teleportsEntities = this.tpsEnts;
+                CFGlass.LOGGER.logger.info("Syncing Portal from packet "+ent.toString());
             }
         });
-
-        if(portalList.size() > 0){
-            PortalEntity ent = portalList.get(0);
-            ent.setPosition(loc.x,loc.y,loc.z);
-            ent.tpLoc = this.tpLoc;
-            ent.dimensions = this.size;
-            ent.portalRotation = this.portalRot;
-            ent.tpRotation = this.tpRot;
-            ent.teleportsEntities = this.tpsEnts;
-        }
     }
 
     @Override

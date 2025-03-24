@@ -9,10 +9,11 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 import javax.annotation.Nullable;
-import java.util.List;
+import java.util.*;
 
 public class CommandPortal extends CommandBase {
     @Override
@@ -114,10 +115,12 @@ public class CommandPortal extends CommandBase {
             tpsEnts = parseBoolean(args[args.length-1]);
         }
 
+
         PortalEntity portal = new PortalEntity(sender.getEntityWorld());
         portal.setCustomNameTag(name);
         syncPortalToArray(portal,valueArray,tpsEnts);
         sender.getEntityWorld().spawnEntity(portal);
+        CFGlass.LOGGER.logger.info("creating portal "+portal.toString());
     }
 
     public void editPortal(MinecraftServer server, ICommandSender sender, String[] args,PortalEntity entity) throws CommandException {
@@ -225,8 +228,9 @@ public class CommandPortal extends CommandBase {
                     break;
             }
         }
-
+        CFGlass.LOGGER.logger.info("editing Portal "+entity.toString());
         syncPortalToArray(entity,valueArray,tpEnts);
+        CFGlass.LOGGER.logger.info("post edit "+entity.toString());
         CFGlass.channel.sendToAll(new PacketPortalSync(entity));
     }
 
@@ -240,5 +244,56 @@ public class CommandPortal extends CommandBase {
         entity.teleportsEntities = tpsEnts;
         entity.scale = 1.0f;
 
+    }
+
+    @Override
+    public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
+        List<String> tabs = new ArrayList<>();
+        int l = args.length;
+        String function;
+
+        if(l == 1){
+
+            tabs.add("create");
+            tabs.add("edit");
+            tabs.add("remove");
+
+        } else if(l==2){
+
+            tabs.add("<name>");
+
+        } else {
+
+            function = args[0];
+            if(function.equals("create")){
+                String[] fields = new String[]{"create", "<name>", "<x>", "<y>", "<z>", "<tpX>", "<tpY>", "<tpZ>", "<width>", "<height>", "<portalYaw>", "<portalPitch>", "<tpYaw>", "<tpPitch>", "<tpsEntities?>"};
+                tabs.add(fields[l-1]);
+            } else if(function.equals("edit")){
+                HashMap<String,String[]> fields = new HashMap<>();
+                fields.put("POS",new String[]{"<x>","<y>","<z>"});
+                fields.put("TP",new String[]{"<tpX>","<tpY>","<tpZ>"});
+                fields.put("SIZE",new String[]{"<length>","<width>"});
+                fields.put("ROT",new String[]{"<portalYaw>","<portalPitch>"});
+                fields.put("TPROT",new String[]{"<tpYaw>","<tpPitch>"});
+                fields.put("TPENTS",new String[]{"<true/false>"});
+
+                for(int i=1;i<=4;i++){
+                    if(l-i>=0){
+                        String positionArgument = args[l-i];
+                        if(fields.containsKey(positionArgument)){
+                            tabs.clear();
+                            String[] values = fields.get(positionArgument);
+                            tabs.addAll(Arrays.asList(values));
+                        }
+                    }
+
+                }
+                if(!tabs.isEmpty()){
+                    tabs.addAll(fields.keySet());
+                }
+            }
+        }
+
+        return tabs;
     }
 }
