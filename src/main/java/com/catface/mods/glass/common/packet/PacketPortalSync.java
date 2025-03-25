@@ -1,5 +1,6 @@
 package com.catface.mods.glass.common.packet;
 
+import com.catface.mods.glass.client.entity.RenderPortalEntity;
 import com.catface.mods.glass.common.CFGlass;
 import com.catface.mods.glass.common.entity.PortalEntity;
 import com.google.common.base.Predicate;
@@ -104,6 +105,10 @@ public class PacketPortalSync extends AbstractPacket {
                 ent.portalRotation = this.portalRot;
                 ent.tpRotation = this.tpRot;
                 ent.teleportsEntities = this.tpsEnts;
+                if(ent.getPortalView() != null){
+                    ent.getPortalView().setPositionAndRotation(this.tpLoc.x,this.tpLoc.y,this.tpLoc.z, (float) this.tpRot.x, (float) this.tpRot.y);
+                }
+                RenderPortalEntity.clearRegisteredPortals();
                 CFGlass.LOGGER.logger.info("Syncing Portal from packet "+ent.toString());
             }
         });

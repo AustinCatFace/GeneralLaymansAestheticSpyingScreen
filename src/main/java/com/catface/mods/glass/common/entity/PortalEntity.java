@@ -1,5 +1,6 @@
 package com.catface.mods.glass.common.entity;
 
+import com.catface.mods.glass.client.entity.EntityPortalView;
 import com.catface.mods.glass.common.CFGlass;
 import com.catface.mods.glass.common.packet.PacketPortalSync;
 import net.minecraft.entity.Entity;
@@ -8,10 +9,13 @@ import net.minecraft.nbt.NBTTagIntArray;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EntitySelectors;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -24,6 +28,7 @@ public class PortalEntity extends Entity {
     public Vec3d tpLoc = new Vec3d(0.0,0.0,0.0);
     public boolean teleportsEntities = true;
     public float scale = 1.0f;
+    private EntityPortalView portalView = null;
 
     public PortalEntity(World worldIn) {
         super(worldIn);
@@ -161,6 +166,16 @@ public class PortalEntity extends Entity {
     @Override
     protected void writeEntityToNBT(NBTTagCompound compound) {
 
+    }
+
+    @SideOnly(Side.CLIENT)
+    public EntityPortalView getPortalView(){
+        if(portalView == null){
+            portalView = new EntityPortalView(world,this,tpLoc.x,tpLoc.y,tpLoc.z, EnumFacing.NORTH);
+            world.spawnEntity(portalView);
+        }
+        portalView.setPositionAndRotation(tpLoc.x,tpLoc.y,tpLoc.z, (float) tpRotation.x, (float) tpRotation.y);
+        return portalView;
     }
 
     @Override

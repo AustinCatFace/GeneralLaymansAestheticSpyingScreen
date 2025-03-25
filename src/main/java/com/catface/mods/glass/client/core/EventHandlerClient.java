@@ -1,5 +1,6 @@
 package com.catface.mods.glass.client.core;
 
+import com.catface.mods.glass.client.entity.RenderPortalEntity;
 import com.catface.mods.glass.common.CFGlass;
 import com.catface.mods.glass.common.block.MirrorPlacement;
 import com.catface.mods.glass.common.block.TerminalPlacement;
@@ -11,6 +12,8 @@ import com.catface.mods.glass.common.tileentity.mirror.TileEntityMirrorMaster;
 import me.ichun.mods.ichunutil.client.model.item.ModelEmpty;
 import me.ichun.mods.ichunutil.common.module.worldportals.common.WorldPortals;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.item.Item;
 import net.minecraft.tileentity.TileEntity;
@@ -140,10 +143,22 @@ public class EventHandlerClient
     }
 
     @SubscribeEvent
+    public void onClientWorldLoad(WorldEvent.Load event)
+    {
+        if(event.getWorld() instanceof WorldClient)
+        {
+            RenderPortalEntity.clearRegisteredPortals();
+            RenderPortalEntity.portalRenderGlobal = new RenderGlobal(Minecraft.getMinecraft());
+            RenderPortalEntity.portalRenderGlobal.setWorldAndLoadRenderers((WorldClient) event.getWorld());
+        }
+    }
+
+    @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event)
     {
         if(event.getWorld().isRemote)
         {
+            RenderPortalEntity.clearRegisteredPortals();
             Minecraft mc = Minecraft.getMinecraft();
             if(mc.world != null)
             {
