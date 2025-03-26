@@ -16,7 +16,7 @@ import java.io.IOException;
 
 public class GuiChannelSetter extends GuiScreen
 {
-    public static final ResourceLocation texBackground = new ResourceLocation("generallaymansaestheticspyingscreen", "textures/gui/channel_set.png");
+    public static final ResourceLocation texBackground = new ResourceLocation("cfglass", "textures/gui/channel_set.png");
 
     public static final int ID_CONFIRM = 0;
     public static final int ID_PUBLIC_CHANNEL = 1;

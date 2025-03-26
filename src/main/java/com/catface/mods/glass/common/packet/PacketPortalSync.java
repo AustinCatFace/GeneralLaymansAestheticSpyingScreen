@@ -2,6 +2,7 @@ package com.catface.mods.glass.common.packet;
 
 import com.catface.mods.glass.common.CFGlass;
 import com.catface.mods.glass.common.entity.PortalEntity;
+import com.catface.mods.glass.common.tileentity.TileEntityPortal;
 import com.google.common.base.Predicate;
 import io.netty.buffer.ByteBuf;
 import me.ichun.mods.ichunutil.common.core.network.AbstractPacket;
@@ -40,6 +41,16 @@ public class PacketPortalSync extends AbstractPacket {
         portalRot = entity.portalRotation;
         tpRot = entity.tpRotation;
         tpsEnts = entity.teleportsEntities;
+    }
+
+    public PacketPortalSync(TileEntityPortal portal){
+        name = portal.name;
+        loc = portal.portalOffset;
+        tpLoc = portal.tpLoc;
+        size = portal.dimensions;
+        portalRot = portal.portalRotation;
+        tpRot = portal.tpRotation;
+        tpsEnts = portal.teleportsEntities;
     }
 
     @Override
@@ -89,23 +100,17 @@ public class PacketPortalSync extends AbstractPacket {
     @SideOnly(Side.CLIENT)
     public void syncPortal(World world){
         Minecraft.getMinecraft().addScheduledTask(()->{
-            List<PortalEntity> portalList = world.getEntities(PortalEntity.class, new Predicate<PortalEntity>() {
-                @Override
-                public boolean apply(@Nullable PortalEntity input) {
-                    return input.getCustomNameTag().equals(name);
-                }
-            });
 
-            if(portalList.size() > 0){
-                PortalEntity ent = portalList.get(0);
-                ent.setPosition(loc.x,loc.y,loc.z);
-                ent.tpLoc = this.tpLoc;
-                ent.dimensions = this.size;
-                ent.portalRotation = this.portalRot;
-                ent.tpRotation = this.tpRot;
-                ent.teleportsEntities = this.tpsEnts;
-                CFGlass.LOGGER.logger.info("Syncing Portal from packet "+ent.toString());
-            }
+            CFGlass.eventHandlerClient.syncList.add(this);
+//            if(TileEntityPortal.tileEntityList.containsKey(this.name)){
+//                TileEntityPortal portal = TileEntityPortal.tileEntityList.get(this.name);
+//
+//
+//                CFGlass.eventHandlerClient.portalPlacements.remove(this.name);
+//            } else {
+//                CFGlass.LOGGER.logger.info("Could not find Tile Entity with name "+this.name);
+//            }
+
         });
     }
 

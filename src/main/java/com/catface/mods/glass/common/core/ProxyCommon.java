@@ -5,10 +5,7 @@ import com.catface.mods.glass.common.packet.PacketPortalSync;
 import com.catface.mods.glass.common.packet.PacketSetChannel;
 import com.catface.mods.glass.common.packet.PacketSetProjector;
 import com.catface.mods.glass.common.packet.PacketWirelessOrder;
-import com.catface.mods.glass.common.tileentity.TileEntityGlassBase;
-import com.catface.mods.glass.common.tileentity.TileEntityGlassMaster;
-import com.catface.mods.glass.common.tileentity.TileEntityGlassTerminal;
-import com.catface.mods.glass.common.tileentity.TileEntityGlassWireless;
+import com.catface.mods.glass.common.tileentity.*;
 import com.catface.mods.glass.common.tileentity.mirror.TileEntityMirrorBase;
 import com.catface.mods.glass.common.CFGlass;
 import com.catface.mods.glass.common.tileentity.mirror.TileEntityMirrorMaster;
@@ -31,6 +28,7 @@ public class ProxyCommon
         GameRegistry.registerTileEntity(TileEntityGlassTerminal.class, "GLASS_TETerminal");
         GameRegistry.registerTileEntity(TileEntityMirrorBase.class,"GLASS_MIRRORBase");
         GameRegistry.registerTileEntity(TileEntityMirrorMaster.class,"GLASS_MIRRORMaster");
+        GameRegistry.registerTileEntity(TileEntityPortal.class,"GLASS_PORTAL");
 
         CFGlass.eventHandlerServer = new EventHandlerServer();
         MinecraftForge.EVENT_BUS.register(CFGlass.eventHandlerServer);

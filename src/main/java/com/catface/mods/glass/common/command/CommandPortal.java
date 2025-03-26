@@ -1,16 +1,23 @@
 package com.catface.mods.glass.common.command;
 
 import com.catface.mods.glass.common.CFGlass;
+import com.catface.mods.glass.common.block.BlockPortal;
 import com.catface.mods.glass.common.entity.PortalEntity;
 import com.catface.mods.glass.common.packet.PacketPortalSync;
+import com.catface.mods.glass.common.tileentity.TileEntityPortal;
 import com.google.common.base.Predicate;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
+import net.minecraft.init.Blocks;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagDouble;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -56,27 +63,45 @@ public class CommandPortal extends CommandBase {
                 }
             });
 
+            HashMap<String,TileEntityPortal> portalTEList = TileEntityPortal.tileEntityList;
+
             switch(func){
                 case "create":
-                    if(portals.size() >= 1){
+//                    if(portals.size() >= 1){
+//                        throw new WrongUsageException("there's already a portal with name "+name);
+//                    }
+                    if(portalTEList.containsKey(name)){
                         throw new WrongUsageException("there's already a portal with name "+name);
                     }
-                    createPortal(server,sender,args);
+                    //createPortal(server,sender,args);
+                    createPortalTE(server,sender,args);
                     break;
                 case "remove":
 
-                    if(portals.size() < 1){
+//                    if(portals.size() < 1){
+//                        throw new WrongUsageException("no portals found with name "+name);
+//                    }
+
+                    if(!portalTEList.containsKey(name)){
                         throw new WrongUsageException("no portals found with name "+name);
                     }
-                    for(PortalEntity portal: portals){
-                        portal.setDead();
-                    }
+
+                    TileEntityPortal portal = portalTEList.get(name);
+                    sender.getEntityWorld().setBlockState(portal.getPos(), Blocks.AIR.getDefaultState(),3);
+//                    for(PortalEntity portal: portals){
+//                        portal.setDead();
+//                    }
                     break;
                 case "edit":
-                    if(portals.size() < 1){
+//                    if(portals.size() < 1){
+//                        throw new WrongUsageException("no portals found with name "+name);
+//                    }
+//                    editPortal(server, sender, args,portals.get(0));
+
+                    if(!portalTEList.containsKey(name)){
                         throw new WrongUsageException("no portals found with name "+name);
                     }
-                    editPortal(server, sender, args,portals.get(0));
+                    editPortalTE(server,sender,args,portalTEList.get(name));
                     break;
                 default:
                     break;
@@ -120,6 +145,45 @@ public class CommandPortal extends CommandBase {
         portal.setCustomNameTag(name);
         syncPortalToArray(portal,valueArray,tpsEnts);
         sender.getEntityWorld().spawnEntity(portal);
+        CFGlass.LOGGER.logger.info("creating portal "+portal.toString());
+    }
+
+    public void createPortalTE(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
+
+        double[] valueArray = new double[]{     0, // portal loc (0-2)
+                                                0,
+                                                0,
+                                                sender.getPositionVector().x, // tp loc (3-5)
+                                                sender.getPositionVector().y+10,
+                                                sender.getPositionVector().z,
+                                                1.0, // width
+                                                2.0, // height
+                                                0.0, // portalYaw
+                                                0.0, // portalPitch
+                                                0.0, // tpYaw
+                                                0.0};// tpPitch
+        String name = args[1];
+        for(int i=2;i<args.length-1;i++){
+            try{
+                double o = parseDouble(args[i]);
+                valueArray[i-2] = o;
+            } catch (Exception e){
+                throw new WrongUsageException(getCreateUsage(sender));
+            }
+        }
+
+        boolean tpsEnts = false;
+        if(args.length >2){
+            tpsEnts = parseBoolean(args[args.length-1]);
+        }
+
+
+        World world = sender.getEntityWorld();
+        BlockPos pos = sender.getPosition();
+        world.setBlockState(pos, CFGlass.blockPortal.getDefaultState(),3);
+        TileEntityPortal portal = new TileEntityPortal(name);
+        syncPortalToArray(portal,valueArray,tpsEnts);
+        world.setTileEntity(pos,portal);
         CFGlass.LOGGER.logger.info("creating portal "+portal.toString());
     }
 
@@ -234,9 +298,129 @@ public class CommandPortal extends CommandBase {
         CFGlass.channel.sendToAll(new PacketPortalSync(entity));
     }
 
+    public void editPortalTE(MinecraftServer server, ICommandSender sender, String[] args,TileEntityPortal te) throws CommandException {
+        double[] valueArray = new double[]{     te.portalOffset.x, // portal loc (0-2)
+                te.portalOffset.y,
+                te.portalOffset.z,
+                te.tpLoc.x, // tp loc (3-5)
+                te.tpLoc.y,
+                te.tpLoc.z,
+                te.dimensions.x, // width
+                te.dimensions.y, // height
+                te.portalRotation.x, // portalYaw
+                te.portalRotation.y, // portalPitch
+                te.tpRotation.x, // tpYaw
+                te.tpRotation.y};// tpPitch
+
+        boolean tpEnts = te.teleportsEntities;
+        for(int i=0;i<args.length;i++){
+            String s = args[i];
+            switch(s){
+                case "POS":
+                    if(args.length>i+3){
+                        try{
+                            double x = parseDouble(args[i+1]);
+                            double y = parseDouble(args[i+2]);
+                            double z = parseDouble(args[i+3]);
+                            valueArray[0] = x;
+                            valueArray[1] = y;
+                            valueArray[2] = z;
+                        } catch (Exception e){
+                            throw new WrongUsageException(getEditUsage(sender));
+                        }
+                    } else {
+                        throw new WrongUsageException(getEditUsage(sender));
+                    }
+                    break;
+                case "TP":
+                    if(args.length>i+3){
+                        try{
+                            double x = parseDouble(args[i+1]);
+                            double y = parseDouble(args[i+2]);
+                            double z = parseDouble(args[i+3]);
+                            valueArray[3] = x;
+                            valueArray[4] = y;
+                            valueArray[5] = z;
+                        } catch (Exception e){
+                            throw new WrongUsageException(getEditUsage(sender));
+                        }
+                    } else {
+                        throw new WrongUsageException(getEditUsage(sender));
+                    }
+                    break;
+                case "SIZE":
+                    if(args.length>i+2){
+                        try{
+                            double x = parseDouble(args[i+1]);
+                            double y = parseDouble(args[i+2]);
+                            valueArray[6] = x;
+                            valueArray[7] = y;
+                        } catch (Exception e){
+                            throw new WrongUsageException(getEditUsage(sender));
+                        }
+                    } else {
+                        throw new WrongUsageException(getEditUsage(sender));
+                    }
+                    break;
+                case "ROT":
+                    if(args.length>i+2){
+                        try{
+                            double x = parseDouble(args[i+1]);
+                            double y = parseDouble(args[i+2]);
+                            valueArray[8] = x;
+                            valueArray[9] = y;
+                        } catch (Exception e){
+                            throw new WrongUsageException(getEditUsage(sender));
+                        }
+                    } else {
+                        throw new WrongUsageException(getEditUsage(sender));
+                    }
+                    break;
+                case "TPROT":
+                    if(args.length>i+2){
+                        try{
+                            double x = parseDouble(args[i+1]);
+                            double y = parseDouble(args[i+2]);
+                            valueArray[10] = x;
+                            valueArray[11] = y;
+                        } catch (Exception e){
+                            throw new WrongUsageException(getEditUsage(sender));
+                        }
+                    } else {
+                        throw new WrongUsageException(getEditUsage(sender));
+                    }
+                    break;
+                case "TPENTS":
+                    if(args.length>i+1){
+                        try{
+                            tpEnts = parseBoolean(args[i+1]);
+                        } catch (Exception e){
+                            throw new WrongUsageException(getEditUsage(sender));
+                        }
+                    } else {
+                        throw new WrongUsageException(getEditUsage(sender));
+                    }
+                    break;
+            }
+        }
+        syncPortalToArray(te,valueArray,tpEnts);
+        CFGlass.channel.sendToAll(new PacketPortalSync(te));
+    }
+
 
     public void syncPortalToArray(PortalEntity entity, double[] values,boolean tpsEnts){
         entity.setPosition(values[0],values[1],values[2]);
+        entity.tpLoc = new Vec3d(values[3],values[4],values[5]);
+        entity.dimensions = new Vec3d(values[6],values[7],0.05);
+        entity.portalRotation = new Vec3d(values[8],values[9],0.0);
+        entity.tpRotation = new Vec3d(values[10],values[11],0.0);
+        entity.teleportsEntities = tpsEnts;
+        entity.scale = 1.0f;
+
+    }
+
+    public void syncPortalToArray(TileEntityPortal entity, double[] values,boolean tpsEnts){
+        entity.portalOffset = new Vec3d(values[0],values[1],values[2]);
         entity.tpLoc = new Vec3d(values[3],values[4],values[5]);
         entity.dimensions = new Vec3d(values[6],values[7],0.05);
         entity.portalRotation = new Vec3d(values[8],values[9],0.0);
@@ -261,7 +445,7 @@ public class CommandPortal extends CommandBase {
         } else if(l==2){
 
             tabs.add("<name>");
-
+            tabs.addAll(TileEntityPortal.tileEntityList.keySet());
         } else {
 
             function = args[0];
@@ -295,5 +479,41 @@ public class CommandPortal extends CommandBase {
         }
 
         return tabs;
+    }
+
+    public NBTTagCompound generateCompoundFromArgs(MinecraftServer server, ICommandSender sender,String name, double[] values, boolean tpsEnts){
+        NBTTagCompound compound = new NBTTagCompound();
+
+        NBTTagList offList = newDoubleNBTList(values[0],values[1],values[2]);
+        compound.setTag("offset",offList);
+
+        NBTTagList dblList = newDoubleNBTList(values[6],values[7],0.05);
+        compound.setTag("dimensions",dblList);
+
+        NBTTagList tpList = newDoubleNBTList(values[3],values[4],values[5]);
+        compound.setTag("tpLoc",tpList);
+
+        NBTTagList rotList = newDoubleNBTList(values[8],values[9],0.0);
+        compound.setTag("portalRotation",rotList);
+
+        NBTTagList tpRotList = newDoubleNBTList(values[10],values[11],0.0);
+        compound.setTag("tpRotation",tpRotList);
+
+        compound.setBoolean("tpEnt",tpsEnts);
+        compound.setFloat("scale",1.0f);
+        compound.setString("name",name);
+        return compound;
+    }
+
+    protected NBTTagList newDoubleNBTList(double... numbers)
+    {
+        NBTTagList nbttaglist = new NBTTagList();
+
+        for (double d0 : numbers)
+        {
+            nbttaglist.appendTag(new NBTTagDouble(d0));
+        }
+
+        return nbttaglist;
     }
 }

@@ -21,7 +21,7 @@ import java.util.Collections;
 
 public class GuiChannelSetterProjector extends GuiScreen
 {
-    public static final ResourceLocation texBackground = new ResourceLocation("generallaymansaestheticspyingscreen", "textures/gui/channel_set.png");
+    public static final ResourceLocation texBackground = new ResourceLocation("cfglass", "textures/gui/channel_set.png");
 
     public static final int ID_CONFIRM = 0;
     public static final int ID_WIRELESS_ORDER = 1;

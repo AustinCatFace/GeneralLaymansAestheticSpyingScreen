@@ -24,7 +24,7 @@ import java.util.ArrayList;
 
 public class GuiWirelessOrder extends GuiScreen
 {
-    public static final ResourceLocation texBackground = new ResourceLocation("generallaymansaestheticspyingscreen", "textures/gui/wireless_order.png");
+    public static final ResourceLocation texBackground = new ResourceLocation("cfglass", "textures/gui/wireless_order.png");
 
     public static final int ID_CONFIRM = 0;
     public static final int ID_WIRELESS_ORDER = 1;

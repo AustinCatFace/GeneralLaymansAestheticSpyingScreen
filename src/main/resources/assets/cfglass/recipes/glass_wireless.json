@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
       {
-        "item": "generallaymansaestheticspyingscreen:block_glass",
+        "item": "cfglass:block_glass",
         "data": 0
       },
       {
@@ -10,7 +10,7 @@
       }
   ],
   "result": {
-    "item": "generallaymansaestheticspyingscreen:block_glass",
+    "item": "cfglass:block_glass",
     "data": 2
   }
 }

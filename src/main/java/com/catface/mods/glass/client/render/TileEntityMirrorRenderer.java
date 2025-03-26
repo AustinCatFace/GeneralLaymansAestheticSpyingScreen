@@ -53,37 +53,6 @@ public class TileEntityMirrorRenderer extends TileEntitySpecialRenderer<TileEnti
 
         boolean isMaster = te instanceof TileEntityMirrorMaster;
 
-//        if(isMaster)
-//        {
-//            GlStateManager.pushMatrix();
-//            float scale = 0.5F;
-//
-//            EnumFacing face = ((TileEntityMirrorMaster)te).placingFace;
-//            if(face == EnumFacing.DOWN)
-//            {
-//                GlStateManager.rotate(180F, 1F, 0F, 0F);
-//            }
-//            else if(face.getHorizontalIndex() >= 0)
-//            {
-//                int horiOrient = face.getHorizontalIndex();
-//                GlStateManager.rotate(-horiOrient * 90F, 0F, 1F, 0F);
-//                GlStateManager.rotate(90F, 1F, 0F, 0F);
-//            }
-//
-//            GlStateManager.rotate(EntityHelper.interpolateRotation(((TileEntityMirrorMaster)te).rotationBeacon, ((TileEntityMirrorMaster)te).rotationBeaconPrev, partialTick), 0F, 1F, 0F);
-//            GlStateManager.translate(-0.25D, -0.35D, -0.25D);
-//            GlStateManager.scale(scale, scale, scale);
-//            bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-//
-//            Tessellator tessellator = Tessellator.getInstance();
-//            BufferBuilder bufferbuilder = tessellator.getBuffer();
-//
-//            bufferbuilder.begin(7, DefaultVertexFormats.BLOCK);
-//            BlockRendererDispatcher blockrendererdispatcher = Minecraft.getMinecraft().getBlockRendererDispatcher();
-//            blockrendererdispatcher.getBlockModelRenderer().renderModel(te.getWorld(), blockrendererdispatcher.getModelForState(Blocks.BEACON.getDefaultState()), Blocks.BEACON.getDefaultState(), BlockPos.ORIGIN, bufferbuilder, false);
-//            tessellator.draw();
-//            GlStateManager.popMatrix();
-//        }
         
         te.lastDraw = 8;
 

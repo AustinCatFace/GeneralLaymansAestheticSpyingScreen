@@ -20,7 +20,7 @@ import java.util.ArrayList;
 
 public class GuiProjectorSetter extends GuiScreen
 {
-    public static final ResourceLocation texBackground = new ResourceLocation("generallaymansaestheticspyingscreen", "textures/gui/channel_set.png");
+    public static final ResourceLocation texBackground = new ResourceLocation("cfglass", "textures/gui/channel_set.png");
 
     public static final int ID_CONFIRM = 0;
 

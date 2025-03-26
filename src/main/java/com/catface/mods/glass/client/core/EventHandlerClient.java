@@ -2,10 +2,13 @@ package com.catface.mods.glass.client.core;
 
 import com.catface.mods.glass.common.CFGlass;
 import com.catface.mods.glass.common.block.MirrorPlacement;
+import com.catface.mods.glass.common.block.PortalPlacement;
 import com.catface.mods.glass.common.block.TerminalPlacement;
+import com.catface.mods.glass.common.packet.PacketPortalSync;
 import com.catface.mods.glass.common.tileentity.TileEntityGlassBase;
 import com.catface.mods.glass.common.tileentity.TileEntityGlassMaster;
 import com.catface.mods.glass.common.tileentity.TileEntityGlassTerminal;
+import com.catface.mods.glass.common.tileentity.TileEntityPortal;
 import com.catface.mods.glass.common.tileentity.mirror.TileEntityMirrorBase;
 import com.catface.mods.glass.common.tileentity.mirror.TileEntityMirrorMaster;
 import me.ichun.mods.ichunutil.client.model.item.ModelEmpty;
@@ -23,23 +26,24 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public class EventHandlerClient
 {
     public BlockPos clickedPos = BlockPos.ORIGIN;
     public HashMap<String, BlockPos> terminalLocations = new HashMap<>();
     public HashMap<String, BlockPos> mirrorLocations = new HashMap<>();
+    public HashMap<String, BlockPos> portalLocations = new HashMap<>();
     public HashMap<String, HashSet<TileEntityGlassBase>> activeGLASS = new HashMap<>();
     public HashMap<String, HashSet<TileEntityMirrorBase>> activeMIRROR = new HashMap<>();
     public HashSet<String> drawnChannels = new HashSet<>();
     public HashMap<String, TerminalPlacement> terminalPlacements = new HashMap<>();
     public HashMap<String, MirrorPlacement> mirrorPlacements = new HashMap<>();
+    public HashMap<String, PortalPlacement> portalPlacements = new HashMap<>();
     public HashMap<String, Integer> terminalPlacementCreationTimeout = new HashMap<>();
     public HashMap<String, Integer> mirrorPlacementCreationTimeout = new HashMap<>();
+    public HashMap<String, Integer> portalPlacementCreationTimeout = new HashMap<>();
+    public ArrayList<PacketPortalSync> syncList = new ArrayList<>();
 
     @SubscribeEvent
     public void onRenderTick(TickEvent.RenderTickEvent event)
@@ -110,6 +114,29 @@ public class EventHandlerClient
                         ite1.remove();
                     }
                 }
+
+                Iterator<Map.Entry<String, Integer>> ite2 = portalPlacementCreationTimeout.entrySet().iterator();
+                while(ite2.hasNext())
+                {
+                    Map.Entry<String, Integer> e = ite2.next();
+                    e.setValue(e.getValue() - 1);
+                    if(e.getValue() < 0)
+                    {
+                        ite2.remove();
+                    }
+                }
+
+                for(PacketPortalSync sync: syncList){
+                    if(TileEntityPortal.tileEntityList.containsKey(sync.name)){
+                        TileEntityPortal portal = TileEntityPortal.tileEntityList.get(sync.name);
+                        portal.updateFromPacket(sync);
+                        if(portalPlacements.containsKey(portal.name)){
+                            portalPlacements.get(portal.name).updatePlacement();
+                        }
+                    }
+                }
+
+                syncList.clear();
             }
         }
     }
@@ -123,6 +150,8 @@ public class EventHandlerClient
 
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(CFGlass.blockMirror), 0, new ModelResourceLocation("cfglass:block_mirror", "inventory"));
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(CFGlass.blockMirror), 1, new ModelResourceLocation("cfglass:block_mirror_master", "inventory"));
+
+        ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(CFGlass.blockPortal), 0, new ModelResourceLocation("cfglass:block_portal", "inventory"));
 
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(CFGlass.blockGlassTerminal), 0, new ModelResourceLocation("cfglass:block_glass_terminal", "inventory"));
     }
@@ -169,6 +198,17 @@ public class EventHandlerClient
                     }
                 }
 
+                Iterator<Map.Entry<String, BlockPos>> iteP = portalLocations.entrySet().iterator();
+                while(iteP.hasNext())
+                {
+                    Map.Entry<String, BlockPos> e = iteP.next();
+                    TileEntity te = mc.world.getTileEntity(e.getValue());
+                    if(!(te instanceof TileEntityMirrorMaster))
+                    {
+                        iteP.remove();
+                    }
+                }
+
                 Iterator<Map.Entry<String, HashSet<TileEntityGlassBase>>> ite1 = activeGLASS.entrySet().iterator();
                 while(ite1.hasNext())
                 {
@@ -205,6 +245,11 @@ public class EventHandlerClient
                 mirrorPlacements.forEach((k, v) -> WorldPortals.eventHandlerClient.renderGlobalProxy.releaseViewFrustum(v.getPair()));
                 mirrorPlacements.clear();
                 mirrorPlacementCreationTimeout.clear();
+
+                portalLocations.clear();
+                portalPlacements.forEach((k, v) -> WorldPortals.eventHandlerClient.renderGlobalProxy.releaseViewFrustum(v.getPair()));
+                portalPlacements.clear();
+                portalPlacementCreationTimeout.clear();
             }
         }
     }
@@ -291,6 +336,35 @@ public class EventHandlerClient
             }
 
             mirrorPlacementCreationTimeout.put(channel, 13); //13 tick wait before trying again.
+        }
+        return null;
+    }
+
+    public PortalPlacement getPortalPlacement(String name) //this is called in render, only from active bases.
+    {
+        if(!portalPlacementCreationTimeout.containsKey(name))
+        {
+            if(portalPlacements.containsKey(name))
+            {
+                return portalPlacements.get(name);
+            }
+            if(portalLocations.containsKey(name)) {
+                Minecraft mc = Minecraft.getMinecraft();
+                TileEntity te = mc.world.getTileEntity(portalLocations.get(name));
+                if (te instanceof TileEntityPortal) {
+                    TileEntityPortal portal = (TileEntityPortal) te;
+                    PortalPlacement placement = new PortalPlacement(portal);
+                    EventHandlerClient.this.portalPlacements.put(name, placement);
+                    CFGlass.LOGGER.logger.info("creating placement client");
+                    return placement;
+
+
+                } else {
+                    portalLocations.remove(name);
+                }
+            }
+
+            portalPlacementCreationTimeout.put(name, 13); //13 tick wait before trying again.
         }
         return null;
     }
@@ -416,5 +490,10 @@ public class EventHandlerClient
         mirrorPlacements.forEach((k, v) -> WorldPortals.eventHandlerClient.renderGlobalProxy.releaseViewFrustum(v.getPair()));
         mirrorPlacements.clear();
         mirrorPlacementCreationTimeout.clear();
+
+        portalLocations.clear();
+        portalPlacements.forEach((k, v) -> WorldPortals.eventHandlerClient.renderGlobalProxy.releaseViewFrustum(v.getPair()));
+        portalPlacements.clear();
+        portalPlacementCreationTimeout.clear();
     }
 }

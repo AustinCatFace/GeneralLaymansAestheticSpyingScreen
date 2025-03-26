@@ -1,6 +1,7 @@
 package com.catface.mods.glass.client.entity;
 
 import com.catface.mods.glass.common.entity.PortalEntity;
+import com.catface.mods.glass.common.tileentity.TileEntityPortal;
 import me.ichun.mods.ichunutil.common.module.worldportals.common.portal.WorldPortal;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
@@ -15,6 +16,7 @@ import org.lwjgl.opengl.GL11;
 public class PortalEntityPlacement extends WorldPortal {
 
     public PortalEntity entity;
+    public TileEntityPortal te;
     public PortalEntityPlacement(World world){
         super(world);
     }
@@ -23,8 +25,23 @@ public class PortalEntityPlacement extends WorldPortal {
         this.entity = entity;
 
         PortalEntityPlacement pair = new PortalEntityPlacement(world);
+        pair.entity = entity;
         pair.setPosition(entity.tpLoc);
         pair.setFace(entity.getHorizontalFacing(), EnumFacing.UP);
+        setPair(pair);
+        pair.setPair(this);
+
+        setCullRender(false);
+    }
+
+    public PortalEntityPlacement(TileEntityPortal te){
+        super(te.getWorld(), new Vec3d(te.getPos()).addVector(0.5,0,0.5), EnumFacing.getFront(te.getBlockMetadata()), EnumFacing.UP, (float) te.dimensions.x, (float) te.dimensions.y);
+        this.te = te;
+
+        PortalEntityPlacement pair = new PortalEntityPlacement(world);
+        pair.te=te;
+        pair.setPosition(te.tpLoc);
+        pair.setFace(EnumFacing.getFront(te.getBlockMetadata()), EnumFacing.UP);
         setPair(pair);
         pair.setPair(this);
 
@@ -55,10 +72,17 @@ public class PortalEntityPlacement extends WorldPortal {
         GlStateManager.color(1.0f,1.0f,1.0f,1.0f);
 
         bufferbuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
-        bufferbuilder.pos(-entity.dimensions.x/2,  entity.dimensions.y, 0F).color(1.0f,1.0f,1.0f,1.0f).endVertex();
-        bufferbuilder.pos(-entity.dimensions.x/2, 0, 0F).color(1.0f,1.0f,1.0f,1.0f).endVertex();
-        bufferbuilder.pos( entity.dimensions.x/2, 0, 0F).color(1.0f,1.0f,1.0f,1.0f).endVertex();
-        bufferbuilder.pos( entity.dimensions.x/2,  entity.dimensions.y, 0F).color(1.0f,1.0f,1.0f,1.0f).endVertex();
+        if(entity != null) {
+            bufferbuilder.pos(-entity.dimensions.x / 2, entity.dimensions.y, 0F).color(1.0f, 1.0f, 1.0f, 1.0f).endVertex();
+            bufferbuilder.pos(-entity.dimensions.x / 2, 0, 0F).color(1.0f, 1.0f, 1.0f, 1.0f).endVertex();
+            bufferbuilder.pos(entity.dimensions.x / 2, 0, 0F).color(1.0f, 1.0f, 1.0f, 1.0f).endVertex();
+            bufferbuilder.pos(entity.dimensions.x / 2, entity.dimensions.y, 0F).color(1.0f, 1.0f, 1.0f, 1.0f).endVertex();
+        } else if(te != null){
+            bufferbuilder.pos(-te.dimensions.x / 2, te.dimensions.y, 0F).color(1.0f, 1.0f, 1.0f, 1.0f).endVertex();
+            bufferbuilder.pos(-te.dimensions.x / 2, 0, 0F).color(1.0f, 1.0f, 1.0f, 1.0f).endVertex();
+            bufferbuilder.pos(te.dimensions.x / 2, 0, 0F).color(1.0f, 1.0f, 1.0f, 1.0f).endVertex();
+            bufferbuilder.pos(te.dimensions.x / 2, te.dimensions.y, 0F).color(1.0f, 1.0f, 1.0f, 1.0f).endVertex();
+        }
         tessellator.draw();
         GlStateManager.popMatrix();
 

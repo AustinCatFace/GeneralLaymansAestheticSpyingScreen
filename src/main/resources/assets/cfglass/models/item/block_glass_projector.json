@@ -1,5 +1,5 @@
 {
-    "parent": "generallaymansaestheticspyingscreen:block/block_glass",
+    "parent": "cfglass:block/block_glass",
     "textures": {
         "particle": "blocks/glass",
         "glass": "blocks/glass",
