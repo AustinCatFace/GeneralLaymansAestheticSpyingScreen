@@ -29,6 +29,7 @@ public class ProxyCommon
         GameRegistry.registerTileEntity(TileEntityMirrorBase.class,"GLASS_MIRRORBase");
         GameRegistry.registerTileEntity(TileEntityMirrorMaster.class,"GLASS_MIRRORMaster");
         GameRegistry.registerTileEntity(TileEntityPortal.class,"GLASS_PORTAL");
+        GameRegistry.registerTileEntity(TileEntityBoxPortal.class,"GLASS_BOX_PORTAL");
 
         CFGlass.eventHandlerServer = new EventHandlerServer();
         MinecraftForge.EVENT_BUS.register(CFGlass.eventHandlerServer);

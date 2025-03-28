@@ -9,6 +9,7 @@ import me.ichun.mods.ichunutil.common.core.network.AbstractPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
@@ -22,40 +23,39 @@ import java.util.UUID;
 public class PacketPortalSync extends AbstractPacket {
 
     public String name;
+    public BlockPos pos;
     public Vec3d loc;
     public Vec3d tpLoc;
     public Vec3d size;
     public Vec3d portalRot;
     public Vec3d tpRot;
+    public float scale;
     public boolean tpsEnts;
 
     public PacketPortalSync(){
 
     }
 
-    public PacketPortalSync(PortalEntity entity){
-        name = entity.getCustomNameTag();
-        loc = entity.getPositionVector();
-        tpLoc = entity.tpLoc;
-        size = entity.dimensions;
-        portalRot = entity.portalRotation;
-        tpRot = entity.tpRotation;
-        tpsEnts = entity.teleportsEntities;
-    }
 
     public PacketPortalSync(TileEntityPortal portal){
         name = portal.name;
+        pos = portal.getPos();
         loc = portal.portalOffset;
         tpLoc = portal.tpLoc;
         size = portal.dimensions;
         portalRot = portal.portalRotation;
         tpRot = portal.tpRotation;
         tpsEnts = portal.teleportsEntities;
+        scale = portal.scale;
     }
 
     @Override
     public void writeTo(ByteBuf buf) {
         ByteBufUtils.writeUTF8String(buf,name);
+        buf.writeInt(pos.getX());
+        buf.writeInt(pos.getY());
+        buf.writeInt(pos.getZ());
+
         buf.writeDouble(loc.x);
         buf.writeDouble(loc.y);
         buf.writeDouble(loc.z);
@@ -77,17 +77,20 @@ public class PacketPortalSync extends AbstractPacket {
         buf.writeDouble(tpRot.z);
 
         buf.writeBoolean(tpsEnts);
+        buf.writeFloat(scale);
     }
 
     @Override
     public void readFrom(ByteBuf buf) {
         name = ByteBufUtils.readUTF8String(buf);
+        pos = new BlockPos(buf.readInt(),buf.readInt(),buf.readInt());
         loc = new Vec3d(buf.readDouble(),buf.readDouble(),buf.readDouble());
         tpLoc = new Vec3d(buf.readDouble(),buf.readDouble(),buf.readDouble());
         size = new Vec3d(buf.readDouble(),buf.readDouble(),buf.readDouble());
         portalRot = new Vec3d(buf.readDouble(),buf.readDouble(),buf.readDouble());
         tpRot = new Vec3d(buf.readDouble(),buf.readDouble(),buf.readDouble());
         tpsEnts = buf.readBoolean();
+        scale = buf.readFloat();
     }
 
     @Override
@@ -100,16 +103,8 @@ public class PacketPortalSync extends AbstractPacket {
     @SideOnly(Side.CLIENT)
     public void syncPortal(World world){
         Minecraft.getMinecraft().addScheduledTask(()->{
-
+            CFGlass.LOGGER.logger.info("recieving packet "+toString());
             CFGlass.eventHandlerClient.syncList.add(this);
-//            if(TileEntityPortal.tileEntityList.containsKey(this.name)){
-//                TileEntityPortal portal = TileEntityPortal.tileEntityList.get(this.name);
-//
-//
-//                CFGlass.eventHandlerClient.portalPlacements.remove(this.name);
-//            } else {
-//                CFGlass.LOGGER.logger.info("Could not find Tile Entity with name "+this.name);
-//            }
 
         });
     }
@@ -117,5 +112,18 @@ public class PacketPortalSync extends AbstractPacket {
     @Override
     public Side receivingSide() {
         return Side.CLIENT;
+    }
+
+    @Override
+    public String toString() {
+        return "PacketPortalSync{" +
+                "name='" + name + '\'' +
+                ", loc=" + loc +
+                ", tpLoc=" + tpLoc +
+                ", size=" + size +
+                ", portalRot=" + portalRot +
+                ", tpRot=" + tpRot +
+                ", tpsEnts=" + tpsEnts +
+                '}';
     }
 }

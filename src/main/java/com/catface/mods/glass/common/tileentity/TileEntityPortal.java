@@ -2,7 +2,9 @@ package com.catface.mods.glass.common.tileentity;
 
 import com.catface.mods.glass.common.CFGlass;
 import com.catface.mods.glass.common.packet.PacketPortalSync;
+import com.google.common.base.Predicate;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.multiplayer.ChunkProviderClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
@@ -16,31 +18,44 @@ import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
-import java.util.HashMap;
-import java.util.List;
+import javax.annotation.Nullable;
+import java.util.*;
 
 public class TileEntityPortal extends TileEntity implements ITickable {
 
-    public Vec3d dimensions = new Vec3d(1.0,2.0,0.05);
-    public Vec3d portalOffset = new Vec3d(0.0,0.0,0.0);
-    public Vec3d portalRotation = new Vec3d(0.0,0.0,0.0);
-    public Vec3d tpRotation = new Vec3d(0.0,0.0,0.0);
-    public Vec3d tpLoc = new Vec3d(0.0,0.0,0.0);
-    public boolean teleportsEntities = true;
+    public Vec3d dimensions;
+    public Vec3d portalOffset;
+    public Vec3d portalRotation;
+    public Vec3d tpRotation;
+    public Vec3d tpLoc;
+    public boolean teleportsEntities;
     public float scale = 1.0f;
     public String name = null;
 
-    public static HashMap<String,TileEntityPortal> tileEntityList = new HashMap<>();
 
     public TileEntityPortal(){
-
+        dimensions = new Vec3d(1.0,2.0,0.05);
+        portalOffset = new Vec3d(0.0,0.0,0.0);
+        portalRotation = new Vec3d(0.0,0.0,0.0);
+        tpRotation = new Vec3d(0.0,0.0,0.0);
+        tpLoc = new Vec3d(0.0,0.0,0.0);
+        teleportsEntities = true;
+        scale = 1.0f;
     }
 
+    public static HashMap<String, BlockPos> portalList = new HashMap<>();
+
     public TileEntityPortal(String name){
-        setName(name);
+        this();
+        this.name = name;
     }
 
     @Override
@@ -50,40 +65,45 @@ public class TileEntityPortal extends TileEntity implements ITickable {
             this.tpLoc = new Vec3d(this.pos.getX(),this.pos.getY()+10,this.pos.getZ());
         }
         if(this.name == null){
-            CFGlass.LOGGER.logger.info(tileEntityList.keySet());
-            setName("portal"+(tileEntityList.size()+1));
+            this.name = generateName();
         }
 
-        CFGlass.eventHandlerClient.portalLocations.put(name,this.pos);
-        tileEntityList.put(this.name,this);
+        if(this.world.isRemote) {
+            CFGlass.eventHandlerClient.portalLocations.put(name, this.pos);
+            //updatePortalChunk(true);
+        }
+    }
+
+    @SideOnly(Side.CLIENT)
+    public void updatePortalChunk(boolean load){
+        BlockPos pos = new BlockPos(this.tpLoc);
+        ChunkPos chunkPos = new ChunkPos(pos);
+        ChunkProviderClient provider = (ChunkProviderClient) world.getChunkProvider();
+        boolean f = provider.isChunkGeneratedAt(chunkPos.x, chunkPos.z);
+        if(load && !f){
+            provider.loadChunk(chunkPos.x,chunkPos.z);
+        } else if(f && !load) {
+            provider.unloadChunk(chunkPos.x, chunkPos.z);
+        }
     }
 
     public String generateName(){
-        for(int i=0;i<=tileEntityList.size();i++){
-            if(!tileEntityList.containsKey("portal"+i)){
-                return "portal"+i;
-            }
+        BlockPos pos = this.getPos();
+        if(pos == null){
+            return "portal000";
         }
-
-        return "portal0";
+        return "portal"+"["+pos.getX()+","+pos.getY()+","+pos.getZ()+"]";
     }
 
-    public void setName(String name){
-        CFGlass.LOGGER.logger.info("setting name to "+name+" at "+this.pos);
-        if(tileEntityList.containsKey(name) && tileEntityList.get(name) != this){
-            CFGlass.LOGGER.logger.info("removing "+name+" at "+tileEntityList.get(name));
-            tileEntityList.remove(name);
-        }
-
-        this.name = name;
-        tileEntityList.put(this.name,this);
-    }
 
     @Override
     public void onChunkUnload() {
         super.onChunkUnload();
-        tileEntityList.remove(name);
-        CFGlass.eventHandlerClient.portalLocations.remove(name);
+
+        if(this.world.isRemote) {
+            CFGlass.eventHandlerClient.portalLocations.remove(name);
+            //updatePortalChunk(false);
+        }
     }
 
     @Override
@@ -123,7 +143,9 @@ public class TileEntityPortal extends TileEntity implements ITickable {
     }
 
     public void applyEntityCollision(Entity entity){
-        entity.setPositionAndRotation(this.tpLoc.x,this.tpLoc.y,this.tpLoc.z, (float) this.tpRotation.x, (float) this.tpRotation.y);
+        float yaw = (float) (this.tpRotation.x+this.portalRotation.x);
+        float pitch = (float) (this.tpRotation.y+this.portalRotation.y);
+        entity.setPositionAndRotation(this.tpLoc.x,this.tpLoc.y,this.tpLoc.z, yaw , pitch );
     }
 
     public void processClick(EntityPlayer player){
@@ -137,6 +159,7 @@ public class TileEntityPortal extends TileEntity implements ITickable {
         this.portalRotation = packet.portalRot;
         this.tpRotation = packet.tpRot;
         this.teleportsEntities = packet.tpsEnts;
+        this.scale = packet.scale;
     }
 
     @Override
@@ -224,7 +247,7 @@ public class TileEntityPortal extends TileEntity implements ITickable {
         if(compound.hasKey("name")){
             String name = compound.getString("name");
             if(!name.equals(this.name)){
-                this.setName(name);
+                this.name = name;
             }
         }
 
@@ -274,7 +297,89 @@ public class TileEntityPortal extends TileEntity implements ITickable {
                 '}';
     }
 
+    public float getFacingYaw(){
+        switch (EnumFacing.getFront(this.getBlockMetadata())){
+            case EAST:
+                return 270.0f;
+            case WEST:
+                return 90.0f;
+            case SOUTH:
+                return 180.0f;
+            case NORTH:
+            default:
+                return 0.0f;
+        }
+    }
+
+    public float getFacingPitch(){
+        switch (EnumFacing.getFront(this.getBlockMetadata())){
+            case UP:
+                return 90.0f;
+            case DOWN:
+                return -90.0f;
+            default:
+                return 0.0f;
+        }
+    }
+
+    public EnumFacing getFaceFromRotation(){
+        if(Math.abs(tpRotation.y) > 45){
+            return tpRotation.y>0 ? EnumFacing.UP : EnumFacing.DOWN;
+        } else {
+           double x = Math.abs(tpRotation.x%360);
+           if(x <= 45 || x > 270){
+               return EnumFacing.NORTH;
+           } else if (x > 45 && x <=135){
+               return EnumFacing.WEST;
+           } else if (x > 135 && x <= 225){
+               return EnumFacing.SOUTH;
+           } else {
+               return EnumFacing.EAST;
+           }
+        }
+    }
+
     public static EnumFacing getFace(EnumFacing startFace, Vec3d rotation){
         return EnumFacing.getFacingFromVector((float) rotation.x, (float) rotation.y, (float) rotation.z);
+    }
+
+    public static BlockPos parsePosFromName(String name){
+        BlockPos pos = BlockPos.ORIGIN;
+        int startX = -1;
+        int endX = -1;
+
+        int startY = -1;
+        int endY = -1;
+
+        int startZ = -1;
+        int endZ = -1;
+        for(int i = 0;i<name.length();i++){
+            char c = name.charAt(i);
+            if(c=='['){
+                startX = i+1;
+            } else if (c == ']'){
+                endZ = i;
+            } else if (c == ','){
+                if(endX < 0){
+                    endX = i;
+                    startY = i+1;
+                } else if (endY < 0 ) {
+                    endY = i;
+                    startZ = i + 1;
+                }
+
+            }
+        }
+
+        try {
+            int x = Integer.parseInt(name.substring(startX, endX));
+            int y = Integer.parseInt(name.substring(startY, endY));
+            int z = Integer.parseInt(name.substring(startZ, endZ));
+            pos = new BlockPos(x,y,z);
+        } catch (Exception e){
+
+        }
+
+        return pos;
     }
 }

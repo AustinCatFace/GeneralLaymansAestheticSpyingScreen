@@ -44,6 +44,7 @@ public class CFGlass
     public static Block blockGlassTerminal;
     public static Block blockMirror;
     public static Block blockPortal;
+    public static Block blockBoxPortal;
 
     public static SoundEvent soundAmb;
 

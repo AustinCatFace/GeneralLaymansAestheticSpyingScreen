@@ -1,13 +1,8 @@
 package com.catface.mods.glass.client.render;
 
-import com.catface.mods.glass.client.core.EventHandlerClient;
-import com.catface.mods.glass.client.entity.PortalEntityPlacement;
 import com.catface.mods.glass.common.CFGlass;
-import com.catface.mods.glass.common.block.MirrorPlacement;
 import com.catface.mods.glass.common.block.PortalPlacement;
-import com.catface.mods.glass.common.tileentity.TileEntityPortal;
-import com.catface.mods.glass.common.tileentity.mirror.TileEntityMirrorBase;
-import com.catface.mods.glass.common.tileentity.mirror.TileEntityMirrorMaster;
+import com.catface.mods.glass.common.tileentity.TileEntityBoxPortal;
 import me.ichun.mods.ichunutil.common.core.util.EntityHelper;
 import me.ichun.mods.ichunutil.common.module.worldportals.client.render.WorldPortalRenderer;
 import me.ichun.mods.ichunutil.common.module.worldportals.common.portal.EntityTransformationStack;
@@ -19,22 +14,17 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
 
-import java.util.ArrayList;
+public class TileEntityBoxPortalRenderer extends TileEntitySpecialRenderer<TileEntityBoxPortal> {
 
-public class TileEntityPortalRenderer extends TileEntitySpecialRenderer<TileEntityPortal> {
-
-    public TileEntityPortalRenderer(){
+    public TileEntityBoxPortalRenderer(){
 
     }
 
     @Override
-    public void render(TileEntityPortal te, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
+    public void render(TileEntityBoxPortal te, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
         super.render(te, x, y, z, partialTicks, destroyStage, alpha);
 
         GlStateManager.pushMatrix();
@@ -72,7 +62,7 @@ public class TileEntityPortalRenderer extends TileEntitySpecialRenderer<TileEnti
         GlStateManager.popMatrix();
     }
 
-    public void drawScene(TileEntityPortal te, float partialTick)
+    public void drawScene(TileEntityBoxPortal te, float partialTick)
     {
 
         if(WorldPortalRenderer.renderLevel == 0 && !CFGlass.eventHandlerClient.drawnChannels.contains(te.name))
@@ -81,7 +71,7 @@ public class TileEntityPortalRenderer extends TileEntitySpecialRenderer<TileEnti
             PortalPlacement placement = CFGlass.eventHandlerClient.getPortalPlacement(te.name);
 
             if(placement == null){
-                CFGlass.LOGGER.logger.info("creating placement render");
+                //CFGlass.LOGGER.logger.info("creating placement render");
                 placement = new PortalPlacement(te);
             }
 
@@ -94,9 +84,12 @@ public class TileEntityPortalRenderer extends TileEntitySpecialRenderer<TileEnti
             double destX = te.tpLoc.x;
             double destY = te.tpLoc.y;
             double destZ = te.tpLoc.z;
-
+            float viewScale = 1.0f/te.scale;
             float[] appliedOffset = placement.getQuaternionFormula().applyPositionalRotation(new float[] { EntityHelper.interpolateValues((float)entity.prevPosX, (float)entity.posX, partialTick) - (float)centerX, EntityHelper.interpolateValues((float)entity.prevPosY, (float)entity.posY, partialTick) + entity.getEyeHeight() - (float)centerY, EntityHelper.interpolateValues((float)entity.prevPosZ, (float)entity.posZ, partialTick) - (float)centerZ });
             //float[] appliedOffset = new float[]{0.0f,0.0f,0.0f};
+            appliedOffset[0] = appliedOffset[0]*viewScale;
+            appliedOffset[1] = appliedOffset[1]*viewScale;
+            appliedOffset[2] = appliedOffset[2]*viewScale;
             float[] appliedRotation = placement.getQuaternionFormula().applyRotationalRotation(new float[] {(float) (EntityHelper.interpolateValues(entity.prevRotationYaw, entity.rotationYaw, partialTick)+te.tpRotation.x), (float) (EntityHelper.interpolateValues(entity.prevRotationPitch, entity.rotationPitch, partialTick)+te.tpRotation.y), (float) (WorldPortalRenderer.getRollFactor(WorldPortalRenderer.renderLevel, partialTick)+te.tpRotation.z)});
 
             EntityTransformationStack ets = new EntityTransformationStack(entity).moveEntity(destX, destY, destZ, new float[] { 0F, 0F, 0F }, appliedRotation, partialTick);
@@ -125,25 +118,84 @@ public class TileEntityPortalRenderer extends TileEntitySpecialRenderer<TileEnti
         }
     }
 
-    public static void drawPlanes(TileEntityPortal te, float r, float g, float b, float alpha, double pushback, float partialTick)
+    public static void drawBox(TileEntityBoxPortal te, float r, float g, float b, float a, double pushback, float partialTick)
     {
-        boolean calcAlpha = alpha == -1;
-        if(calcAlpha) //calculate the alpha. not drawing planes.
-        {
-            alpha = 1.0f;
-        }
+
         Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        BufferBuilder buffer = tessellator.getBuffer();
 
         GlStateManager.pushMatrix();
-        GlStateManager.translate(0F, 0F, pushback);
-        double width = te.dimensions.x/2;
-        double height = te.dimensions.y;
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_COLOR);
-        bufferbuilder.pos(-width,  0, 0F).color(r, g, b, alpha).endVertex();
-        bufferbuilder.pos(-width, height, 0F).color(r, g, b, alpha).endVertex();
-        bufferbuilder.pos( width, height, 0F).color(r, g, b, alpha).endVertex();
-        bufferbuilder.pos( width,  0, 0F).color(r, g, b, alpha).endVertex();
+
+        double w = te.dimensions.x;
+        double l = te.dimensions.z;
+        double h = te.dimensions.y;
+        GlStateManager.translate(0, 0F, pushback);
+        buffer.begin(7, DefaultVertexFormats.POSITION_COLOR);
+
+        buffer.pos(-w / 2, 0, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, 0, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, h, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, h, -l / 2).color(r, g, b, a).endVertex();
+
+        buffer.pos(w / 2, h, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, 0, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, 0, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, h, -l / 2).color(r, g, b, a).endVertex();
+
+        // Back face
+        buffer.pos(-w / 2, 0, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, 0, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, h, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, h, l / 2).color(r, g, b, a).endVertex();
+
+        buffer.pos(w / 2, h, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, 0, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, 0, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, h, l / 2).color(r, g, b, a).endVertex();
+
+        // Left face
+        buffer.pos(-w / 2, 0, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, 0, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, h, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, h, -l / 2).color(r, g, b, a).endVertex();
+
+        buffer.pos(-w / 2, h, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, 0, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, 0, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, h, -l / 2).color(r, g, b, a).endVertex();
+
+        // Right face
+        buffer.pos(w / 2, 0, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, 0, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, h, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, h, -l / 2).color(r, g, b, a).endVertex();
+
+        buffer.pos(w / 2, h, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, 0, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, 0, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, h, -l / 2).color(r, g, b, a).endVertex();
+
+        // Top face
+        buffer.pos(-w / 2, h, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, h, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, h, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, h, l / 2).color(r, g, b, a).endVertex();
+
+        buffer.pos(w / 2, h, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, h, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, h, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, h, l / 2).color(r, g, b, a).endVertex();
+
+        // Bottom face
+        buffer.pos(-w / 2, 0, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, 0, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, 0, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, 0, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, 0, l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(w / 2, 0, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, 0, -l / 2).color(r, g, b, a).endVertex();
+        buffer.pos(-w / 2, 0, l / 2).color(r, g, b, a).endVertex();
+
 
 
         tessellator.draw();
@@ -152,10 +204,16 @@ public class TileEntityPortalRenderer extends TileEntitySpecialRenderer<TileEnti
 
     }
 
-    @Override
-    public boolean isGlobalRenderer(TileEntityPortal te) {
-        return true;
+    private static void drawQuad(BufferBuilder buffer, float x1, float y1, float z1, float x2, float y2, float z2, float r, float g, float b, float a) {
+        buffer.pos(x1, y1, z1).color(r, g, b, a).endVertex();
+        buffer.pos(x2, y1, z1).color(r, g, b, a).endVertex();
+        buffer.pos(x2, y2, z1).color(r, g, b, a).endVertex();
+        buffer.pos(x1, y2, z1).color(r, g, b, a).endVertex();
     }
 
 
+    @Override
+    public boolean isGlobalRenderer(TileEntityBoxPortal te) {
+        return true;
+    }
 }

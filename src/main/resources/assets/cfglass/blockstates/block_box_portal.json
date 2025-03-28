@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "facing=north":    { "model": "carpet" },
+        "facing=south":    { "model": "carpet" },
+        "facing=east":    { "model": "carpet" },
+        "facing=west":    { "model": "carpet" },
+        "facing=up":    { "model": "carpet" },
+        "facing=down":    { "model": "carpet" }
+    }
+}

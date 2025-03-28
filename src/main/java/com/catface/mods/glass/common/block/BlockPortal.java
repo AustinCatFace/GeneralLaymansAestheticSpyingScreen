@@ -111,6 +111,15 @@ public class BlockPortal extends Block implements ITileEntityProvider {
     }
 
     @Override
+    public void breakBlock(World worldIn, BlockPos pos, IBlockState state) {
+        super.breakBlock(worldIn, pos, state);
+        TileEntity te = worldIn.getTileEntity(pos);
+        if(te instanceof TileEntityPortal){
+            ((TileEntityPortal) te).onChunkUnload();
+        }
+    }
+
+    @Override
     public IBlockState getStateFromMeta(int meta) {
         return this.getDefaultState().withProperty(FACING,EnumFacing.getFront(meta));
     }

@@ -127,11 +127,12 @@ public class EventHandlerClient
                 }
 
                 for(PacketPortalSync sync: syncList){
-                    if(TileEntityPortal.tileEntityList.containsKey(sync.name)){
-                        TileEntityPortal portal = TileEntityPortal.tileEntityList.get(sync.name);
+                    TileEntity te = mc.world.getTileEntity(sync.pos);
+                    if(te instanceof TileEntityPortal){
+                        TileEntityPortal portal = (TileEntityPortal) te;
                         portal.updateFromPacket(sync);
                         if(portalPlacements.containsKey(portal.name)){
-                            portalPlacements.get(portal.name).updatePlacement();
+                            portalPlacements.remove(portal.name);
                         }
                     }
                 }
@@ -152,6 +153,7 @@ public class EventHandlerClient
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(CFGlass.blockMirror), 1, new ModelResourceLocation("cfglass:block_mirror_master", "inventory"));
 
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(CFGlass.blockPortal), 0, new ModelResourceLocation("cfglass:block_portal", "inventory"));
+        ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(CFGlass.blockBoxPortal), 0, new ModelResourceLocation("cfglass:block_box_portal", "inventory"));
 
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(CFGlass.blockGlassTerminal), 0, new ModelResourceLocation("cfglass:block_glass_terminal", "inventory"));
     }
@@ -496,4 +498,6 @@ public class EventHandlerClient
         portalPlacements.clear();
         portalPlacementCreationTimeout.clear();
     }
+
+
 }
